@@ -4,9 +4,8 @@
 # Author   : Kun Yao
 #            Dainong Ma
 #            Zhe Wang
-#            Yufei Li
 
-import sys, getopt
+import sys, getopt, os
 
 #=======================
 #Print the usage message
@@ -17,10 +16,24 @@ def usage():
     sys.exit()
 
 #================================
-#TODO: Check the validlity of directory
+#Check the validlity of directory
+#
+# @param dir_ given directory
+# @return bool dir exists or not
 #================================
-def checkdir(directory):
-    return True
+def checkdir(dir_):
+    return os.path.exists(full_path(dir_)) 
+
+#===============================
+#try to convert given directory into abs dir
+#
+# @param dir_ given directory
+# @return string abslute path
+#===============================
+def full_path(dir_):
+    if dir_[0] == '~' and not os.path.exists(dir_):
+        dir_ = os.path.expanduser(dir_)
+    return os.path.abspath(dir_)
 
 #==============================
 #TODO: Estimate total storage for dir
@@ -78,6 +91,9 @@ def main(argv):
     print "methods=", method
     print "volumeid=", volumeid
     print "Directory=", directory
+    print "full path=", full_path(directory)
+    print "path exist=", checkdir(directory)
+    
 
 if __name__ == "__main__":
     main(sys.argv[1:])
