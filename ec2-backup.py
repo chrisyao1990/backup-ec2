@@ -79,11 +79,12 @@ def getdirsize(start_dir = '.'):
 #        set up connection
 #===============================
 def lanuchec2():
-    command =      'aws ec2 run-instances'
-    key =          '--key ec2backup-keypair'
-    group =        '--groups ec2backup-security-group'
-    instancetype = '--instance-type t1.micro'
-    imageid =      '--image-id ami-2f726546'
+    commandhead =  'aws ec2 run-instances '
+    key =          ' --key ec2backup-keypair '
+    group =        ' --security-groups ec2backup-security-group '
+    instancetype = ' --instance-type t1.micro '
+    imageid =      ' --image-id ami-2f726546 '
+    grepinsID =    ' | grep InstanceId '
     flags = os.environ.get('EC2_BACKUP_FLAGS_AWS')
     sshflags = os.environ.get('EC2_BACKUP_FLAGS_SSH')
     
@@ -108,8 +109,18 @@ def lanuchec2():
     securitygroupgen()
 
     #run ec2
-    ec2command = command + key + group + instancetype + imageid
+    ec2command = commandhead + key + group + instancetype + imageid + grepinsID
     out = commands.getstatusoutput(ec2command)
+    INSTANCE_ID = out[1][-13:-3]
+    print out,INDTANCE_ID
+    #TODO: check running
+    sleep(30)
+    #statecheckcommand = '''aws ec2 describe-instances --instance-ids '''+ 
+    #                    INSTANCE_ID + ''' | grep State'''
+    #out = commands.getstatusoutput(statecheckcommand)
+    fatchDNScommand = '''aws ec2 describe-instances --instance-ids'''+
+                        INSTANCE_ID + ''' | grep State'''
+
 
        
 #========================
@@ -128,7 +139,7 @@ def keygen():
 
 #=======================
 #Delete key
-#TODO: handle key name
+#TODO: handle key name del local key
 #======================
 def delkey(keyname = 'ec2backup-keypair'):
     deletekeycommand = '''aws ec2 delete-key-pair --key-name ec2backup-keypair'''
