@@ -230,10 +230,11 @@ def main(argv):
             usage()
         elif opt in ("-m", "--method"):
             if(arg!='dd' and arg!='rsync'):
-                print "Unknow methods:",arg
+                print "Error: Unknow methods:",arg
                 usage()
             method = arg
         elif opt in ("-v", "--volumeid"):
+            VOLUME_ID = arg
             volumeid = arg
 
     if(len(args)==1):
@@ -251,6 +252,7 @@ def main(argv):
     print "full path=", full_path(directory)
     print "path exist=", checkdir(directory)
 
+    VERBOSE = len(os.environ.get('EC2_BACKUP_VERBOSE'))    
     if(checkdir(directory) == False):
         print 'Error: directory not exist'
     SOURCE_DIR = full_path(directory)
