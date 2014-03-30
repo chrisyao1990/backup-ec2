@@ -4,9 +4,8 @@
 # Author   : Kun Yao
 #            Dainong Ma
 #            Zhe Wang
-#iijiji
 
-import sys, getopt, os
+import sys, getopt, os, commands
 
 #=======================
 #Print the usage message
@@ -61,7 +60,8 @@ def lanuchec2():
     imageid =      '--image-id ami-2f726546'
     flags = os.environ.get('EC2_BACKUP_FLAGS_AWS')
     sshflags = os.environ.get('EC2_BACKUP_FLAGS_SSH')
-
+    
+    #parse aws flags
     if(flags != None):
         try:
             opts, args = getopt.getopt(flags.split(),"i:",["instance-type="])
@@ -74,6 +74,16 @@ def lanuchec2():
                 instancetype = '--instance-type '+arg
         if(len(arg)s>=1)
             print "unknow option detected in $EC2_BACKUP_FLAGS_SSH:", args
+    
+    #TODO:parse ssh flags
+
+    #key and group gen
+    keygen()
+    securitygroupgen()
+
+    #run ec2
+    ec2command = command + key + group + instancetype + imageid
+    
        
 #========================
 #TODO: Key pair gen SSH FLAGS HANDLE
@@ -81,9 +91,22 @@ def lanuchec2():
 #=======================
 def keygen():
     checkcommand = '''aws ec2 describe-key-pairs | grep '"KeyName": "ec2backup-keypair",'|wc -l'''
-    genkeycommand = '''aws ec2 create-key-pair --key-name ec2backup-keypair --query 'KeyMaterial' --output text > ~/.ssh/ec2backup-keypair.pem''' 
+    out = commands.getstatusoutput(checkcommand)
+    print out
+    if(out[1] == '0'):#no key exist
+        genkeycommand = '''aws ec2 create-key-pair --key-name ec2backup-keypair --query 'KeyMaterial' --output text > ~/.ssh/ec2backup-keypair.pem''' 
+        out = commands.getstatusoutput(genkeycommand)
+        print out
+
+#=======================
+#Delete key
+#TODO: handle key name
+#======================
+def delkey(keyname = 'ec2backup-keypair'):
     deletekeycommand = '''aws ec2 delete-key-pair --key-name ec2backup-keypair'''
-    comm = "aws ec2 describe-key-pairs --key-name Mykeypair"
+    out = commands.getstatusoutput(deletekeycommand)
+    print out
+
 
 #=======================
 #TODO:security group gen
@@ -91,9 +114,23 @@ def keygen():
 #=======================
 def securitygroupgen():
     checkcommand = '''aws ec2 describe-security-groups | grep '"GroupName": "ec2backup-security-group",'| wc -l '''
-    gensecuritycommand = '''aws ec2 create-security-group --group-name ec2backup-security-group --description "My ec2backup-security-group"'''
-    addrulecommand = '''aws ec2 authorize-security-group-ingress --group-name ec2backup-security-group --protocol tcp --port 22 --cidr 0.0.0.0/0'''
+    out = commands.getstatusoutput(checkcommand)
+    if (out[1] == '0'):#no group exist
+        gensecuritycommand = '''aws ec2 create-security-group --group-name ec2backup-security-group --description "My ec2backup-security-group"'''
+        addrulecommand = '''aws ec2 authorize-security-group-ingress --group-name ec2backup-security-group --protocol tcp --port 22 --cidr 0.0.0.0/0'''
+        out = commands.getstatusoutput(gensecuritycommand)
+        print out
+        out = commands.getstatusoutput(addrulecommand)
+        print out
+
+#================
+#Delete security group
+# TODO: handle groupname
+#================
+def delsecuritygroup(groupname = 'ec2backup-security-group'):
     deletegroupcommand = '''aws ec2 delete-security-group --group-name ec2backup-security-group'''
+    out = commands.getstatusoutput(deletegroupcommand)
+    print out
 
 #==============================
 #TODO: use 'dd' or 'rsync' backup
