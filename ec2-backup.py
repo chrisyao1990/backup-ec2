@@ -162,14 +162,14 @@ def securitygroupgen():
 #==============================
 def dobackup(method):
    if (method == 'dd')
-        command = "tar -zcvf  %s_backup.tar.gz %s"%(SOURCE_DIR,SOURCE_DIR)
-                                output = commands.getstatusoutput(command)
-                        command =" dd if=%s_backup.tar.gz | ssh -i %s %s@%s \" dd of=&s/backup.tar.gz\""%(SOURCE_DIR,KEYPAIR_LOCATION,INSTANCE_LOGIN_USR,EC2_HOST,MOUNT_DIR_LOCATION)
-                                output = commands.getstatusoutput(command)
-                        command = "rm -rf %s_backup.tar.gz"%(SOURCE_DIR)
-                                output = commands.getstatusoutput(command)
-        else
-        command = "rsync -e \"ssh -i %s\" -az %s %s@%s:%s/ >out.txt"%($KEYPAIR_LOCATION, $SOURCE_DIR, $INSTANCE_LOGIN_USR, $EC2_HOST, $MOUNT_DIR_LOCATION)
+       command = "tar -zcvf  %s_backup.tar.gz %s"%(SOURCE_DIR,SOURCE_DIR)
+       output = commands.getstatusoutput(command)
+       command =" dd if=%s_backup.tar.gz | ssh -i %s %s@%s \" dd of=&s/backup.tar.gz\""%(SOURCE_DIR,KEYPAIR_LOCATION,INSTANCE_LOGIN_USR,EC2_HOST,MOUNT_DIR_LOCATION)
+       output = commands.getstatusoutput(command)
+       command = "rm -rf %s_backup.tar.gz"%(SOURCE_DIR)
+       output = commands.getstatusoutput(command)
+   else
+       command = "rsync -e \"ssh -i %s\" -az %s %s@%s:%s/ >out.txt"%($KEYPAIR_LOCATION, $SOURCE_DIR, $INSTANCE_LOGIN_USR, $EC2_HOST, $MOUNT_DIR_LOCATION)
 
 #================================
 # create volume and output the
@@ -177,26 +177,26 @@ def dobackup(method):
 #================================
 
 def createvolumes():
-        commands="aws ec2 create-volume --size %d --availability-zone %s | grep VolumeId"%(VOLUME_SIZE,AVA_ZONE)
-        time.sleep(10)
-        out = commands.getstatusoutput(command)
-        VOLUME_ID=INSTANCE_ID = out[1][-15:-3]
+    commands="aws ec2 create-volume --size %d --availability-zone %s | grep VolumeId"%(VOLUME_SIZE,AVA_ZONE)
+    time.sleep(10)
+    out = commands.getstatusoutput(command)
+    VOLUME_ID=INSTANCE_ID = out[1][-15:-3]
 
 #================================
 #attach volume to running instance
 #===============================
 def attach():
-        command="aws ec2 attach-volume --volume-id %s --instance-id %s --device %s"%(VOLUME_ID,EC2_INSTANCE_ID,MOUNT_DEV_LOCATION)
-        out = commands.getstatusoutput(command)
+    command="aws ec2 attach-volume --volume-id %s --instance-id %s --device %s"%(VOLUME_ID,EC2_INSTANCE_ID,MOUNT_DEV_LOCATION)
+    out = commands.getstatusoutput(command)
 
 #===============================
 #mount dir to instance
 #===============================
 def mountvolume():
-        if(MOUNT_DIR_LOCATION == '')
-                                command = "ssh -i %s %s@%s \"sudo mkfs -t ext3 %s && mkdir /mnt/data-store && mount %s %s && exit\" "%($KEYPAIR_LOCATION, $INSTANCE_LOGIN_USR, $EC2_HOST, $MOUNT_DEV_LOCATION, $MOUNT_DEV_LOCATION, $MOUNT_DIR_LOCATION)
-                        else
-                                command = "ssh -i %s %s@%s \"sudo mkfs -t ext3 %s && mount %s %s && exit\" "%($KEYPAIR_LOCATION, $INSTANCE_LOGIN_USR, $EC2_HOST, $MOUNT_DEV_LOCATION, $MOUNT_DEV_LOCATION, $MOUNT_DIR_LOCATION)
+   if(MOUNT_DIR_LOCATION == '')
+       command = "ssh -i %s %s@%s \"sudo mkfs -t ext3 %s && mkdir /mnt/data-store && mount %s %s && exit\" "%($KEYPAIR_LOCATION, $INSTANCE_LOGIN_USR, $EC2_HOST, $MOUNT_DEV_LOCATION, $MOUNT_DEV_LOCATION, $MOUNT_DIR_LOCATION)
+   else
+       command = "ssh -i %s %s@%s \"sudo mkfs -t ext3 %s && mount %s %s && exit\" "%($KEYPAIR_LOCATION, $INSTANCE_LOGIN_USR, $EC2_HOST, $MOUNT_DEV_LOCATION, $MOUNT_DEV_LOCATION, $MOUNT_DIR_LOCATION)
 
 
 #================
