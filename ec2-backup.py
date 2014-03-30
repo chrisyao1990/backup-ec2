@@ -6,6 +6,23 @@
 #            Zhe Wang
 
 import sys, getopt, os, commands
+#======================
+#global attributes
+#======================
+
+INSTANCE_ID = "i-8495d9d5"
+INSTANCE_DNS = "\0"
+INSTANCE_KEY_LOCATION = "\0"
+INSTANCE_LOGIN_USR = "fedora"
+MOUNT_DEV_LOCATION = "/dev/sdb"
+MOUNT_DIR_LOCATION = "~/"
+BACKUP_SIZE = 0  #source dir size
+VOLUME_SIZE = 0
+VOLUME_ID = "\0"
+AVA_ZONE="us-east-1a"
+
+
+
 
 #=======================
 #Print the usage message
@@ -47,6 +64,15 @@ def getdirsize(start_dir = '.'):
             fp = os.path.join(dirpath, f)
             total_size += os.path.getsize(fp)
     return total_size
+#==============================
+#calculate 
+#
+#
+#
+#==============================
+
+
+
 
 #===============================
 #TODO: Create EC2 instance and 
