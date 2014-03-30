@@ -73,7 +73,7 @@ def lanuchec2():
             elif opt == '--instance-type':
                 instancetype = '--instance-type '+arg
         if(len(arg)s>=1)
-            print "unknow option detected in $EC2_BACKUP_FLAGS_SSH:", args
+            print "unknow option detected in $EC2_BACKUP_FLAGS_AWS:", args
     
     #TODO:parse ssh flags
 
@@ -83,7 +83,8 @@ def lanuchec2():
 
     #run ec2
     ec2command = command + key + group + instancetype + imageid
-    
+    out = commands.getstatusoutput(ec2command)
+
        
 #========================
 #TODO: Key pair gen SSH FLAGS HANDLE
@@ -97,6 +98,7 @@ def keygen():
         genkeycommand = '''aws ec2 create-key-pair --key-name ec2backup-keypair --query 'KeyMaterial' --output text > ~/.ssh/ec2backup-keypair.pem''' 
         out = commands.getstatusoutput(genkeycommand)
         print out
+    return '~/.ssh/ec2backup-keypair.pem'
 
 #=======================
 #Delete key
@@ -177,7 +179,11 @@ def main(argv):
     print "Directory=", directory
     print "full path=", full_path(directory)
     print "path exist=", checkdir(directory)
-    
+    if(checkdir(directory) == False):
+        print 'Error: directory not exist'
+    #lanuchec2()
+    #dobackup()
+    #clean()#delkey delgroup shutdown instances
 
 if __name__ == "__main__":
     main(sys.argv[1:])
