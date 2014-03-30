@@ -25,31 +25,31 @@ AVA_ZONE="us-east-1a"
 
 
 #=======================
-#Print the usage message
+#PRINT THE USAGE MESSAGE
 #=======================
-def usage():
-    print 'Usage:'
-    print '  ec2-backup [-h] [-m method] [-v volume-id] dir'
-    sys.exit()
+DEF USAGE():
+    PRINT 'USAGE:'
+    PRINT '  EC2-BACKUP [-H] [-M METHOD] [-V VOLUME-ID] DIR'
+    SYS.EXIT()
 
 #================================
-#Check the validlity of directory
+#CHECK THE VALIDLITY OF DIRECTORY
 #
-# @param dir_ given directory
-# @return bool dir exists or not
+# @PARAM DIR_ GIVEN DIRECTORY
+# @RETURN BOOL DIR EXISTS OR NOT
 #================================
-def checkdir(dir_):
-    return os.path.exists(full_path(dir_)) 
+DEF CHECKDIR(DIR_):
+    RETURN OS.PATH.EXISTS(FULL_PATH(DIR_)) 
 
 #===============================
-#try to convert given directory into abs dir
+#TRY TO CONVERT GIVEN DIRECTORY INTO ABS DIR
 #
-# @param dir_ given directory
-# @return string abslute path
+# @PARAM DIR_ GIVEN DIRECTORY
+# @RETURN STRING ABSLUTE PATH
 #===============================
-def full_path(dir_):
-    if dir_[0] == '~' and not os.path.exists(dir_):
-        dir_ = os.path.expanduser(dir_)
+DEF FULL_PATH(DIR_):
+    IF DIR_[0] == '~' AND NOT OS.PATH.EXISTS(DIR_):
+        DIR_ = OS.PATH.EXPANDUSER(DIR_)
     return os.path.abspath(dir_)
 
 #==============================
@@ -70,9 +70,10 @@ def getdirsize(start_dir = '.'):
 #
 #
 #==============================
-
-
-
+def calculate(SOURCE_DIR_SIZE):
+	y = SOURCE_DIR_SIZE/1024/1024/1024
+	VOLUME_SIZE = 2 * (int(y) + 1)
+	print(VOLUME_SIZE)
 
 #===============================
 #TODO: Create EC2 instance and 
