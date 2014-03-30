@@ -47,7 +47,44 @@ def estimatedir(directory):
 #        set up connection
 #===============================
 def lanuchec2():
-    pass
+    command =      'aws ec2 run-instances'
+    key =          '--key lab-keypair'
+    group =        '--groups stevens_cs615'
+    instancetype = '--instance-type t1.micro'
+    imageid =      '--image-id ami-2f726546'
+    flags = os.environ.get('EC2_BACKUP_FLAGS_SSH')
+    if(flags != None):
+        try:
+            opts, args = getopt.getopt(flags.split(),"i:",["instance-type="])
+        except getopt.GetoptError:
+            usage()
+        for opt,arg in opts:
+            if opt == '-i':
+                key = '--key '+ arg
+            elif opt == '--instance-type':
+                instancetype = '--instance-type '+arg
+        if(len(arg)s>=1)
+            print "unknow option detected in $EC2_BACKUP_FLAGS_SSH:", args
+       
+#========================
+#TODO: Key pair gen
+# Defult key name: ec2backup-keypair
+#=======================
+def keygen():
+    checkcommand = '''aws ec2 describe-key-pairs | grep '"KeyName": "ec2backup-keypair",'|wc -l'''
+    genkeycommand = '''aws ec2 create-key-pair --key-name ec2backup-keypair --query 'KeyMaterial' --output text > ~/.ssh/ec2backup-keypair.pem''' 
+    deletekeycommand = '''aws ec2 delete-key-pair --key-name ec2backup-keypair'''
+    comm = "aws ec2 describe-key-pairs --key-name Mykeypair"
+
+#=======================
+#TODO:security group gen
+#Default security group name: ec2backup-security-group
+#=======================
+def securitygroupgen():
+    checkcommand = '''aws ec2 describe-security-groups | grep '"GroupName": "ec2backup-security-group",'| wc -l '''
+    gensecuritycommand = '''aws ec2 create-security-group --group-name ec2backup-security-group --description "My ec2backup-security-group"'''
+    addrulecommand = '''aws ec2 authorize-security-group-ingress --group-name ec2backup-security-group --protocol tcp --port 22 --cidr 0.0.0.0/0'''
+    deletegroupcommand = '''aws ec2 delete-security-group --group-name ec2backup-security-group'''
 
 #==============================
 #TODO: use 'dd' or 'rsync' backup
