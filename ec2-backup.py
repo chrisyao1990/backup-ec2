@@ -37,10 +37,17 @@ def full_path(dir_):
     return os.path.abspath(dir_)
 
 #==============================
-#TODO: Estimate total storage for dir
+#Size of giving dirctory
+# @param  string start dirctory
+# @return int    total number of bytes of giving dir
 #==============================
-def estimatedir(directory):
-    pass
+def getdirsize(start_dir = '.'):
+    total_size = 0
+    for dirpath, dirnames, filenames in os.walk(start_dir):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            total_size += os.path.getsize(fp)
+    return total_size
 
 #===============================
 #TODO: Create EC2 instance and 
@@ -48,11 +55,13 @@ def estimatedir(directory):
 #===============================
 def lanuchec2():
     command =      'aws ec2 run-instances'
-    key =          '--key lab-keypair'
-    group =        '--groups stevens_cs615'
+    key =          '--key ec2backup-keypair'
+    group =        '--groups ec2backup-security-group'
     instancetype = '--instance-type t1.micro'
     imageid =      '--image-id ami-2f726546'
-    flags = os.environ.get('EC2_BACKUP_FLAGS_SSH')
+    flags = os.environ.get('EC2_BACKUP_FLAGS_AWS')
+    sshflags = os.environ.get('EC2_BACKUP_FLAGS_SSH')
+
     if(flags != None):
         try:
             opts, args = getopt.getopt(flags.split(),"i:",["instance-type="])
@@ -67,7 +76,7 @@ def lanuchec2():
             print "unknow option detected in $EC2_BACKUP_FLAGS_SSH:", args
        
 #========================
-#TODO: Key pair gen
+#TODO: Key pair gen SSH FLAGS HANDLE
 # Defult key name: ec2backup-keypair
 #=======================
 def keygen():
