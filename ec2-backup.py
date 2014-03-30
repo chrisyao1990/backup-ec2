@@ -91,6 +91,7 @@ def lanuchec2():
     grepinsID =    ' | grep InstanceId '
     flags = os.environ.get('EC2_BACKUP_FLAGS_AWS')
     sshflags = os.environ.get('EC2_BACKUP_FLAGS_SSH')
+    AMI_ID = 'ami-2f726546'
     
     #parse aws flags
     if(flags != None):
@@ -104,13 +105,13 @@ def lanuchec2():
             elif opt == '--instance-type':
                 instancetype = '--instance-type '+arg
         if(len(args)>=1):
-            print "unknow option detected in $EC2_BACKUP_FLAGS_AWS:", args
+            print "Error: unknow option detected in $EC2_BACKUP_FLAGS_AWS:", args
     
     #TODO:parse ssh flags
 
     #key and group gen
-    keygen()
-    securitygroupgen()
+    KEYPAIR_LOCATION = keygen()
+    SECURITY_GROUP = securitygroupgen()
 
     #run ec2
     ec2command = commandhead + key + group + instancetype + imageid + grepinsID
@@ -138,7 +139,7 @@ def keygen():
     out = commands.getstatusoutput(checkcommand)
     print out
     if(out[1] == '0'):#no key exist
-        genkeycommand = '''aws ec2 create-key-pair --key-name ec2backup-keypair --query 'KeyMaterial' --output text > ~/.ssh/ec2backup-keypair.pem''' 
+        genkeycommand = '''aws ec2 create-key-pair --key-name ec2backup-keypair --query 'KeyMaterial' --output text > ~/.ssh/ec2backup-keypair.pem && chmod 600 ~/.ssh/ec2backup-keypair.pem''' 
         out = commands.getstatusoutput(genkeycommand)
         print out
     return '~/.ssh/ec2backup-keypair.pem'
@@ -167,6 +168,7 @@ def securitygroupgen():
         print out
         out = commands.getstatusoutput(addrulecommand)
         print out
+    return 'ec2backup-security-group'
 
 #================
 #Delete security group
@@ -228,8 +230,9 @@ def main(argv):
     SOURCE_DIR = full_path(directory)
     SOURCE_DIR_SIZE = getdirsize(SOURCE_DIR)
     calculate()#calculate VOL size 
-
-    #lanuchec2()
+    
+    print 'info: lanuchec2'
+    lanuchec2()
     #dobackup()
     #clean()#delkey delgroup shutdown instances
 
