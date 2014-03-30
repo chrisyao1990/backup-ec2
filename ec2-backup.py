@@ -28,31 +28,31 @@ VERBOSE = 0
 
 
 #=======================
-#PRINT THE USAGE MESSAGE
+#Print the usage message
 #=======================
-DEF USAGE():
-    PRINT 'USAGE:'
-    PRINT '  EC2-BACKUP [-H] [-M METHOD] [-V VOLUME-ID] DIR'
-    SYS.EXIT()
+def usage():
+    print 'Usage:'
+    print '  ec2-backup [-h] [-m method] [-v volume-id] dir'
+    sys.exit()
 
 #================================
-#CHECK THE VALIDLITY OF DIRECTORY
+#Check the validlity of directory
 #
-# @PARAM DIR_ GIVEN DIRECTORY
-# @RETURN BOOL DIR EXISTS OR NOT
+# @param dir_ given directory
+# @return bool dir exists or not
 #================================
-DEF CHECKDIR(DIR_):
-    RETURN OS.PATH.EXISTS(FULL_PATH(DIR_)) 
+def checkdir(dir_):
+    return os.path.exists(full_path(dir_))
 
 #===============================
-#TRY TO CONVERT GIVEN DIRECTORY INTO ABS DIR
+#try to convert given directory into abs dir
 #
-# @PARAM DIR_ GIVEN DIRECTORY
-# @RETURN STRING ABSLUTE PATH
+# @param dir_ given directory
+# @return string abslute path
 #===============================
-DEF FULL_PATH(DIR_):
-    IF DIR_[0] == '~' AND NOT OS.PATH.EXISTS(DIR_):
-        DIR_ = OS.PATH.EXPANDUSER(DIR_)
+def full_path(dir_):
+    if dir_[0] == '~' and not os.path.exists(dir_):
+        dir_ = os.path.expanduser(dir_)
     return os.path.abspath(dir_)
 
 #==============================
