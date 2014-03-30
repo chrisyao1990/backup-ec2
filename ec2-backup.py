@@ -73,7 +73,7 @@ def getdirsize(start_dir = '.'):
 #
 #
 #==============================
-def calculate(SOURCE_DIR_SIZE):
+def calculate():
 	y = SOURCE_DIR_SIZE/1024/1024/1024
 	VOLUME_SIZE = 2 * (int(y) + 1)
 	print(VOLUME_SIZE)
@@ -103,7 +103,7 @@ def lanuchec2():
                 key = '--key '+ arg
             elif opt == '--instance-type':
                 instancetype = '--instance-type '+arg
-        if(len(arg)s>=1)
+        if(len(args)>=1):
             print "unknow option detected in $EC2_BACKUP_FLAGS_AWS:", args
     
     #TODO:parse ssh flags
@@ -119,12 +119,14 @@ def lanuchec2():
     print out,INDTANCE_ID
     #TODO: check running
     sleep(30)
-    #statecheckcommand = '''aws ec2 describe-instances --instance-ids '''+ 
+    #statecheckcommand = '''aws ec2 describe-instances --instance-ids '''+\ 
     #                    INSTANCE_ID + ''' | grep State'''
     #out = commands.getstatusoutput(statecheckcommand)
-    fatchDNScommand = '''aws ec2 describe-instances --instance-ids'''+
-                        INSTANCE_ID + ''' | grep State'''
-
+    fatchDNScommand = '''aws ec2 describe-instances --instance-ids'''+\
+                        INSTANCE_ID + ''' | grep PublicDnsName'''
+    out = commands.getstatusoutput(fatchDNScommand)
+    EC2_HOST = out[1][38:-3]
+    print 'EC2_HOST',EC2_HOST
 
        
 #========================
@@ -209,7 +211,7 @@ def main(argv):
     if(len(args)==1):
         directory = args[0]
     else:
-        print "Need one directory"
+        print "Error: Need one directory"
         usage()
     
     #==================
@@ -220,8 +222,13 @@ def main(argv):
     print "Directory=", directory
     print "full path=", full_path(directory)
     print "path exist=", checkdir(directory)
+
     if(checkdir(directory) == False):
         print 'Error: directory not exist'
+    SOURCE_DIR = full_path(directory)
+    SOURCE_DIR_SIZE = getdirsize(SOURCE_DIR)
+    calculate()#calculate VOL size 
+
     #lanuchec2()
     #dobackup()
     #clean()#delkey delgroup shutdown instances
