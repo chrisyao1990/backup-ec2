@@ -67,17 +67,6 @@ def getdirsize(start_dir = '.'):
             fp = os.path.join(dirpath, f)
             total_size += os.path.getsize(fp)
     return total_size
-#==============================
-#calculate 
-#
-#
-#
-#==============================
-def calculate():
-	y = SOURCE_DIR_SIZE/1024/1024/1024
-	VOLUME_SIZE = 2 * (int(y) + 1)
-	print(VOLUME_SIZE)
-
 #===============================
 #TODO: Create EC2 instance and 
 #        set up connection
@@ -170,6 +159,48 @@ def securitygroupgen():
         print out
     return 'ec2backup-security-group'
 
+#==============================
+#TODO: use 'dd' or 'rsync' backup
+#==============================
+def dobackup(method):
+   if (method == 'dd')
+        command = "tar -zcvf  %s_backup.tar.gz %s"%(SOURCE_DIR,SOURCE_DIR)
+                                output = commands.getstatusoutput(command)
+                        command =" dd if=%s_backup.tar.gz | ssh -i %s %s@%s \" dd of=&s/backup.tar.gz\""%(SOURCE_DIR,KEYPAIR_LOCATION,INSTANCE_LOGIN_USR,EC2_HOST,MOUNT_DIR_LOCATION)
+                                output = commands.getstatusoutput(command)
+                        command = "rm -rf %s_backup.tar.gz"%(SOURCE_DIR)
+                                output = commands.getstatusoutput(command)
+        else
+        command = "rsync -e \"ssh -i %s\" -az %s %s@%s:%s/ >out.txt"%($KEYPAIR_LOCATION, $SOURCE_DIR, $INSTANCE_LOGIN_USR, $EC2_HOST, $MOUNT_DIR_LOCATION)
+
+#================================
+# create volume and output the
+#  volumeid
+#================================
+
+def createvolumes():
+        commands="aws ec2 create-volume --size %d --availability-zone %s | grep VolumeId"%(VOLUME_SIZE,AVA_ZONE)
+        time.sleep(10)
+        out = commands.getstatusoutput(command)
+        VOLUME_ID=INSTANCE_ID = out[1][-15:-3]
+
+#================================
+#attach volume to running instance
+#===============================
+def attach():
+        command="aws ec2 attach-volume --volume-id %s --instance-id %s --device %s"%(VOLUME_ID,EC2_INSTANCE_ID,MOUNT_DEV_LOCATION)
+        out = commands.getstatusoutput(command)
+
+#===============================
+#mount dir to instance
+#===============================
+def mountvolume():
+        if(MOUNT_DIR_LOCATION == '')
+                                command = "ssh -i %s %s@%s \"sudo mkfs -t ext3 %s && mkdir /mnt/data-store && mount %s %s && exit\" "%($KEYPAIR_LOCATION, $INSTANCE_LOGIN_USR, $EC2_HOST, $MOUNT_DEV_LOCATION, $MOUNT_DEV_LOCATION, $MOUNT_DIR_LOCATION)
+                        else
+                                command = "ssh -i %s %s@%s \"sudo mkfs -t ext3 %s && mount %s %s && exit\" "%($KEYPAIR_LOCATION, $INSTANCE_LOGIN_USR, $EC2_HOST, $MOUNT_DEV_LOCATION, $MOUNT_DEV_LOCATION, $MOUNT_DIR_LOCATION)
+
+
 #================
 #Delete security group
 # TODO: handle groupname
@@ -179,11 +210,6 @@ def delsecuritygroup(groupname = 'ec2backup-security-group'):
     out = commands.getstatusoutput(deletegroupcommand)
     print out
 
-#==============================
-#TODO: use 'dd' or 'rsync' backup
-#==============================
-def dobackup(method):
-    pass
 
 #=============
 #
