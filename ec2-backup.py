@@ -161,6 +161,8 @@ def launchec2():
         for opt,arg in opts: 
             if opt == '-i':
                 KEYPAIR_LOCATION = arg 
+                path,filename=os.path.split(arg)
+                key = ' --key '+filename
             else:
                 error("Unknow option detected in EC2_BACKUP_FLAGS_SSH,"+\
                         "\n    We only accept change of -i key-pair")
