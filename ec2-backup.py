@@ -104,10 +104,8 @@ def getdirsize(start_dir = '.'):
 #==============================
 def calculate():
 	global SOURCE_DIR_SIZE, VOLUME_SIZE
-	print SOURCE_DIR_SIZE
 	y = SOURCE_DIR_SIZE/1024/1024/1024
 	VOLUME_SIZE = 2 * (int(y) + 1)
-	print(VOLUME_SIZE)
 
 #===============================
 #TODO: Create EC2 instance and 
@@ -179,8 +177,6 @@ def launchec2():
     out = commands.getstatusoutput(ec2command)
     err_check(out)
     EC2_INSTANCE_ID = out[1][-13:-3]
-    print out
-    print EC2_INSTANCE_ID
     message("Create instances sussccful, InstanceID: "+EC2_INSTANCE_ID)
     time.sleep(5)
     statecheckcommand = '''aws ec2 describe-instances --instance-ids '''+\
@@ -198,11 +194,9 @@ def launchec2():
     err_check(out)
     fatchDNScommand = '''aws ec2 describe-instances --instance-id '''+\
                         EC2_INSTANCE_ID+ ''' | grep PublicDnsName | head -1 '''
-    print fatchDNScommand
     out = commands.getstatusoutput(fatchDNScommand)
     err_check(out)
     EC2_HOST = out[1][38:-3]
-    print 'EC2_HOST',EC2_HOST
 
        
 #========================
@@ -213,12 +207,10 @@ def keygen():
     checkcommand = '''aws ec2 describe-key-pairs | grep '"KeyName": "ec2backup-keypair",'|wc -l'''
     out = commands.getstatusoutput(checkcommand)
     err_check(out)
-    print out
     if(out[1] == '0'):#no key exist
         genkeycommand = '''aws ec2 create-key-pair --key-name ec2backup-keypair --query 'KeyMaterial' --output text > ~/.ssh/ec2backup-keypair.pem && chmod 600 ~/.ssh/ec2backup-keypair.pem''' 
         out = commands.getstatusoutput(genkeycommand)
         err_check(out)
-        print out
     return '~/.ssh/ec2backup-keypair.pem'
 
 #=======================
@@ -229,7 +221,6 @@ def delkey(keyname = 'ec2backup-keypair'):
     deletekeycommand = '''aws ec2 delete-key-pair --key-name ec2backup-keypair '''\
             +'''&& rm ~/.ssh/ec2backup-keypair.pem'''
     out = commands.getstatusoutput(deletekeycommand)
-    print out
 
 
 #=======================
@@ -248,7 +239,6 @@ def securitygroupgen():
         time.sleep(5)
         out = commands.getstatusoutput(addrulecommand)
         err_check(out)
-        print out
     return 'ec2backup-security-group'
 #==============================
 #Delete sec group ec2backup-security-group
@@ -283,18 +273,18 @@ def dobackup(method):
 
 		command = "tar -zcvf  %s_backup.tar.gz %s"%(SOURCE_DIR,SOURCE_DIR)
 		output = commands.getstatusoutput(command)
-		print "do tar",output
+		err_check(output)
 		command =" dd if=%s_backup.tar.gz | ssh -i %s %s@%s \" dd of=%s/backup.tar.gz\""%(SOURCE_DIR,KEYPAIR_LOCATION,INSTANCE_LOGIN_USR,EC2_HOST,MOUNT_DIR_LOCATION)
 		output = commands.getstatusoutput(command)
-		print "do dd",output
+		err_check(output)
 		command = "rm -rf %s_backup.tar.gz"%(SOURCE_DIR)
 		output = commands.getstatusoutput(command)
-		print "rm",output
+		err_check(output)
 	else:
 		ABSOLUTE_KEY_LOCATION = full_path(KEYPAIR_LOCATION)
 		command = "rsync -e \"ssh -i %s\" -az %s %s@%s:%s/"%(ABSOLUTE_KEY_LOCATION, SOURCE_DIR, INSTANCE_LOGIN_USR, EC2_HOST, MOUNT_DIR_LOCATION)
 		output = commands.getstatusoutput(command)
-		print "do rsync",output
+		err_check(output)
 
 #================================
 # create volume and output the
@@ -303,13 +293,12 @@ def dobackup(method):
 
 def createvolumes():
     global VOLUME_SIZE,AVA_ZONE,VOLUME_ID
-    command="aws ec2 create-volume --size %d --availability-zone %s | grep VolumeId"%(VOLUME_SIZE,AVA_ZONE)
-    print command
-    out = commands.getstatusoutput(command)
-    VOLUME_ID=out[1][-15:-3]
-    print "volume id",VOLUME_ID
-    time.sleep(5)
-    print "createvolume",out
+    if(VOLUME_ID==""):
+      command="aws ec2 create-volume --size %d --availability-zone %s | grep VolumeId"%(VOLUME_SIZE,AVA_ZONE)
+      out = commands.getstatusoutput(command)
+      VOLUME_ID=out[1][-15:-3]
+      time.sleep(5)
+      err_check(out)
 
 #================================
 #attach volume to running instance
@@ -317,23 +306,23 @@ def createvolumes():
 def attach():
     global VOLUME_ID,EC2_INSTANCE_ID,MOUNT_DEV_LOCATION
     command="aws ec2 attach-volume --volume-id %s --instance-id %s --device %s"%(VOLUME_ID,EC2_INSTANCE_ID,MOUNT_DEV_LOCATION)
-    print command
     out = commands.getstatusoutput(command)
-    print "attach",out
+    err_check(out)
 
 #===============================
 #mount dir to instance
 #===============================
 def mountvolume():
 	global KEYPAIR_LOCATION, INSTANCE_LOGIN_USR, EC2_HOST, MOUNT_DEV_LOCATION, MOUNT_DEV_LOCATION, MOUNT_DIR_LOCATION
-        time.sleep(45)
-	command = "ssh -t -i %s -o StrictHostKeyChecking=no %s@%s \" sudo sleep 5; sudo mkfs -F /dev/xvdb; sudo sleep 5;sudo mkdir %s;sudo mount /dev/xvdb %s; sudo sleep 5;sudo chmod 777 %s;exit\""%(KEYPAIR_LOCATION, INSTANCE_LOGIN_USR, EC2_HOST,MOUNT_DIR_LOCATION,MOUNT_DIR_LOCATION,MOUNT_DIR_LOCATION)
-	print command
+        
+	time.sleep(45)
+	command = "ssh -t -i %s -o StrictHostKeyChecking=no %s@%s \" sudo sleep 5; sudo sleep 5;sudo mkdir %s;sudo mount /dev/xvdb %s; sudo sleep 5;sudo chmod 777 %s;exit\""%(KEYPAIR_LOCATION, INSTANCE_LOGIN_USR, EC2_HOST,MOUNT_DIR_LOCATION,MOUNT_DIR_LOCATION,MOUNT_DIR_LOCATION)
        	out=commands.getstatusoutput(command)
 	if (out[0]==65280):
+	   message("first ssh attempt failed, waiting for 30s for second attempt")
 	   time.sleep(30)
 	   out=commands.getstatusoutput(command)
-       	print "mountvolume",out
+ 	err_check(out)
 #================
 #Delete security group
 # TODO: handle groupname
@@ -342,7 +331,6 @@ def delsecuritygroup(groupname = 'ec2backup-security-group'):
     deletegroupcommand = '''aws ec2 delete-security-group --group-name ec2backup-security-group'''
     out = commands.getstatusoutput(deletegroupcommand)
     err_check(out)
-    print out
 
 
 #=============
@@ -368,7 +356,6 @@ def main(argv):
             sys.exit(0)
         elif opt in ("-m", "--method"):
             if(arg!='dd' and arg!='rsync'):
-                print "Error: Unknow methods:",arg
                 usage()
                 error("Unknow methods "+arg)
             method = arg
