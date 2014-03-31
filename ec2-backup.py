@@ -363,24 +363,21 @@ def main(argv):
         usage()
         error("Need one directory")
     
-    #==================
-    #
-    #==================
     print "methods=", method
     print "volumeid=", volumeid
     print "Directory=", directory
     print "full path=", full_path(directory)
     print "path exist=", checkdir(directory)
 
-    if(os.environ.get('EC2_BACKUP_VERBOSE')!=None):
+    if(os.environ.get('VERBOSE')!=None):
     	VERBOSE = 1
+        print "VERBOSE detected"
     if(checkdir(directory) == False):
         error ("directory not exist")
     SOURCE_DIR = full_path(directory)
     SOURCE_DIR_SIZE = getdirsize(SOURCE_DIR)
     calculate()#calculate VOL size 
     message(" launch ec2 instance")
-    print 'info: launchec2'
     launchec2()
     createvolumes()
     attach()
