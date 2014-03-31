@@ -61,6 +61,7 @@ def full_path(dir_):
 #==============================
 def error(error_message):
     sys.stderr.write("Error: " + error_message + "\n")
+    clean()
     sys.exit(1)
 
 #==============================
@@ -72,6 +73,16 @@ def message(msg_str):
     global VERBOSE
     if(VERBOSE):
         print "Message: ",msg_str,"\n"
+
+#==============================
+#Error check for output from commands.outputstatus
+#
+# @param output len 2 tuple output[0] is return status and ouput[1]
+#                           is return message
+#==============================
+def err_check(output):
+    if(output[0] != 0):
+        error(output[1])
 
 #==============================
 #Size of giving dirctory
@@ -103,12 +114,14 @@ def calculate():
 #        set up connection
 #===============================
 def launchec2():
-    global AMI_ID,KEYPAIR_LOCATION,SECURITY_GROUP,EC2_INSTANCE_ID,EC2_HOST
+    global AMI_ID,KEYPAIR_LOCATION,SECURITY_GROUP,EC2_INSTANCE_ID,\
+            EC2_HOST,AVA_ZONE
     commandhead =  'aws ec2 run-instances '
     key =          ' --key ec2backup-keypair '
     group =        ' --security-groups ec2backup-security-group '
     instancetype = ' --instance-type t1.micro '
     imageid =      ' --image-id ami-2f726546 '
+    avazone =      ' --availability-zone us-east-1b '
     grepinsID =    ' | grep InstanceId | head -1 '
     flags = os.environ.get('EC2_BACKUP_FLAGS_AWS')
     sshflags = os.environ.get('EC2_BACKUP_FLAGS_SSH')
@@ -117,25 +130,52 @@ def launchec2():
     #parse aws flags
     if(flags != None):
         try:
-            opts, args = getopt.getopt(flags.split(),"i:",["instance-type="])
+            opts, args = getopt.getopt(flags.split(),"",\
+                    ["instance-type=","security-groups=","image-id=",\
+                    "availability-zone="])
         except getopt.GetoptError:
-            usage()
+            error("Unknow option detected in EC2_BACKUP_FLAGS_AWS,"+\
+                    "\n    We only accept change of instance-type "+\
+                    "security-groups "+"image-id "+ "availability-zone ")
         for opt,arg in opts:
-            if opt == '-i':
-                key = '--key '+ arg
+            if opt == '--security-groups':
+                group = ' --security-groups ' + arg
+                SECURITY_GROUP = arg
+            elif opt == '--image-id':
+                imageid =' --image-id ' + arg
+                AMI_ID = arg
+            elif opt == '--availability-zone':
+                avazone =' --availability-zone '+arg
+                AVA_ZONE = arg
             elif opt == '--instance-type':
-                instancetype = '--instance-type '+arg
-        if(len(args)>=1):
-            print "Error: unknow option detected in $EC2_BACKUP_FLAGS_AWS:", args
-    
+                instancetype = ' --instance-type '+arg
+            if(len(args)>=1):
+                error("Unknow option detected in EC2_BACKUP_FLAGS_AWS,"+\
+                        "\n    We only accept change of instance-type "+\
+                        "security-groups "+"image-id "+ "availability-zone ")
     #TODO:parse ssh flags
-
+    if(sshflags != None):
+        try:
+            opts, args = getopt.getopt(sshflags.split(),"i:",[])
+        except getopt.GetoptError:
+            error("Unknow option detected in EC2_BACKUP_FLAGS_SSH,"+"\n\
+                    We only accept change of -i key-pair")
+        for opt,arg in opts: 
+            if opt == '-i':
+                KEYPAIR_LOCATION = arg 
+            else:
+                error("Unknow option detected in EC2_BACKUP_FLAGS_SSH,"+\
+                        "\n    We only accept change of -i key-pair")
+        
     #key and group gen
-    KEYPAIR_LOCATION = keygen()
-    SECURITY_GROUP = securitygroupgen()
+    if(len(KEYPAIR_LOCATION)>0):
+        KEYPAIR_LOCATION = keygen()
+    if(len(SECURITY_GROUP)>0):
+        SECURITY_GROUP = securitygroupgen()
 
     #run ec2
-    ec2command = commandhead + key + group + instancetype + imageid + grepinsID
+    ec2command = commandhead + key + group + instancetype + \
+            imageid + avazone + grepinsID
     out = commands.getstatusoutput(ec2command)
     EC2_INSTANCE_ID = out[1][-13:-3]
     print out
@@ -178,7 +218,8 @@ def keygen():
 #TODO: handle key name del local key
 #======================
 def delkey(keyname = 'ec2backup-keypair'):
-    deletekeycommand = '''aws ec2 delete-key-pair --key-name ec2backup-keypair'''
+    deletekeycommand = '''aws ec2 delete-key-pair --key-name ec2backup-keypair '''\
+            +'''&& rm ~/.ssh/ec2backup-keypair.pem'''
     out = commands.getstatusoutput(deletekeycommand)
     print out
 
@@ -198,6 +239,26 @@ def securitygroupgen():
         out = commands.getstatusoutput(addrulecommand)
         print out
     return 'ec2backup-security-group'
+#==============================
+#Delete sec group ec2backup-security-group
+#=============================
+def delsecgroup():
+    delgroupcommand = "aws ec2 delete-security-group --group-name ec2backup-security-group"
+    out = commands.getstatusoutput(delgroupcommand)
+
+#==============================
+#Shutdown or del key or del sec group if needed
+#==============================
+def clean():
+    global KEYPAIR_LOCATION, SECURITY_GROUP, EC2_INSTANCE_ID
+    if (len(EC2_INSTANCE_ID)>1):
+        terminatecommand = "aws ec2 terminate-instances --instance-ids "\
+                +EC2_INSTANCE_ID
+        out = commands.getstatusoutput(terminatecommand)
+    if(KEYPAIR_LOCATION == "~/.ssh/ec2backup-keypair.pem"):
+        delkey()
+    if(SECURITY_GROUP == "ec2backup-security-group"):
+        delsecgroup()
 
 #==============================
 #TODO: use 'dd' or 'rsync' backup
@@ -325,7 +386,7 @@ def main(argv):
     attach()
     mountvolume()
     dobackup(method)
-    #clean()#delkey delgroup shutdown instances
+    clean()#delkey delgroup shutdown instances
 
 if __name__ == "__main__":
     main(sys.argv[1:])
