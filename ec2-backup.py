@@ -365,9 +365,6 @@ def main(argv):
     
     print "methods=", method
     print "volumeid=", volumeid
-    print "Directory=", directory
-    print "full path=", full_path(directory)
-    print "path exist=", checkdir(directory)
 
     if(os.environ.get('VERBOSE')!=None):
     	VERBOSE = 1
@@ -377,11 +374,17 @@ def main(argv):
     SOURCE_DIR = full_path(directory)
     SOURCE_DIR_SIZE = getdirsize(SOURCE_DIR)
     calculate()#calculate VOL size 
-    message(" launch ec2 instance")
+    message("Directory: "+SOURCE_DIR)
+    message("Directory Size(bytes): "+SOURCE_DIR_SIZE)
+    message("Launch EC2 instance now")
     launchec2()
+    message("Create volumes now")
     createvolumes()
+    message("Attach volumes now")
     attach()
+    message("Mount message now")
     mountvolume()
+    message("Do backup "+ method +" now")
     dobackup(method)
     clean()#delkey delgroup shutdown instances
 
