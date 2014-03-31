@@ -177,24 +177,30 @@ def launchec2():
     ec2command = commandhead + key + group + instancetype + \
             imageid + avazone + grepinsID
     out = commands.getstatusoutput(ec2command)
+    err_check(out)
     EC2_INSTANCE_ID = out[1][-13:-3]
     print out
     print EC2_INSTANCE_ID
-
+    message("Create instances sussccful, InstanceID: "+EC2_INSTANCE_ID)
     time.sleep(5)
     statecheckcommand = '''aws ec2 describe-instances --instance-ids '''+\
             EC2_INSTANCE_ID + ''' | grep '"Name": "running"' | wc -l '''
     out = commands.getstatusoutput(statecheckcommand)
+    err_check(out)
     while(out[1] != '1'):
         time.sleep(5)
+        message("Wait instance running ...")
         out = commands.getstatusoutput(statecheckcommand)
+        err_check(out)
     time.sleep(10)
 
     out = commands.getstatusoutput(statecheckcommand)
+    err_check(out)
     fatchDNScommand = '''aws ec2 describe-instances --instance-id '''+\
                         EC2_INSTANCE_ID+ ''' | grep PublicDnsName | head -1 '''
     print fatchDNScommand
     out = commands.getstatusoutput(fatchDNScommand)
+    err_check(out)
     EC2_HOST = out[1][38:-3]
     print 'EC2_HOST',EC2_HOST
 
@@ -206,10 +212,12 @@ def launchec2():
 def keygen():
     checkcommand = '''aws ec2 describe-key-pairs | grep '"KeyName": "ec2backup-keypair",'|wc -l'''
     out = commands.getstatusoutput(checkcommand)
+    err_check(out)
     print out
     if(out[1] == '0'):#no key exist
         genkeycommand = '''aws ec2 create-key-pair --key-name ec2backup-keypair --query 'KeyMaterial' --output text > ~/.ssh/ec2backup-keypair.pem && chmod 600 ~/.ssh/ec2backup-keypair.pem''' 
         out = commands.getstatusoutput(genkeycommand)
+        err_check(out)
         print out
     return '~/.ssh/ec2backup-keypair.pem'
 
@@ -221,6 +229,7 @@ def delkey(keyname = 'ec2backup-keypair'):
     deletekeycommand = '''aws ec2 delete-key-pair --key-name ec2backup-keypair '''\
             +'''&& rm ~/.ssh/ec2backup-keypair.pem'''
     out = commands.getstatusoutput(deletekeycommand)
+    err_check(out)
     print out
 
 
@@ -231,12 +240,15 @@ def delkey(keyname = 'ec2backup-keypair'):
 def securitygroupgen():
     checkcommand = '''aws ec2 describe-security-groups | grep '"GroupName": "ec2backup-security-group",'| wc -l '''
     out = commands.getstatusoutput(checkcommand)
+    err_check(out)
     if (out[1] == '0'):#no group exist
         gensecuritycommand = '''aws ec2 create-security-group --group-name ec2backup-security-group --description "My ec2backup-security-group"'''
         addrulecommand = '''aws ec2 authorize-security-group-ingress --group-name ec2backup-security-group --protocol tcp --port 22 --cidr 0.0.0.0/0'''
         out = commands.getstatusoutput(gensecuritycommand)
+        err_check(out)
         print out
         out = commands.getstatusoutput(addrulecommand)
+        err_check(out)
         print out
     return 'ec2backup-security-group'
 #==============================
@@ -245,6 +257,7 @@ def securitygroupgen():
 def delsecgroup():
     delgroupcommand = "aws ec2 delete-security-group --group-name ec2backup-security-group"
     out = commands.getstatusoutput(delgroupcommand)
+    err_check(out)
 
 #==============================
 #Shutdown or del key or del sec group if needed
@@ -330,6 +343,7 @@ def mountvolume():
 def delsecuritygroup(groupname = 'ec2backup-security-group'):
     deletegroupcommand = '''aws ec2 delete-security-group --group-name ec2backup-security-group'''
     out = commands.getstatusoutput(deletegroupcommand)
+    err_check(out)
     print out
 
 
