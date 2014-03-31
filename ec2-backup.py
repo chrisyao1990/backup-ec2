@@ -296,6 +296,7 @@ def dobackup(method):
 def createvolumes():
     global VOLUME_SIZE,AVA_ZONE,VOLUME_ID
     if(VOLUME_ID==""):
+      message("Create volumes now")
       command="aws ec2 create-volume --size %d --availability-zone %s | grep VolumeId"%(VOLUME_SIZE,AVA_ZONE)
       out = commands.getstatusoutput(command)
       VOLUME_ID=out[1][-15:-3]
@@ -382,7 +383,6 @@ def main(argv):
     message("Directory Size(bytes): "+str(SOURCE_DIR_SIZE))
     message("Launch EC2 instance now")
     launchec2()
-    message("Create volumes now")
     createvolumes()
     message("Attach volumes now")
     attach()
