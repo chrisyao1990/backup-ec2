@@ -33,7 +33,6 @@ VERBOSE = 0
 def usage():
     print 'Usage:'
     print '  ec2-backup [-h] [-m method] [-v volume-id] dir'
-    sys.exit()
 
 #================================
 #Check the validlity of directory
@@ -103,7 +102,7 @@ def calculate():
 #TODO: Create EC2 instance and 
 #        set up connection
 #===============================
-def lanuchec2():
+def launchec2():
     global AMI_ID,KEYPAIR_LOCATION,SECURITY_GROUP,EC2_INSTANCE_ID,EC2_HOST
     commandhead =  'aws ec2 run-instances '
     key =          ' --key ec2backup-keypair '
@@ -141,11 +140,17 @@ def lanuchec2():
     EC2_INSTANCE_ID = out[1][-13:-3]
     print out
     print EC2_INSTANCE_ID
-    #TODO: check running
-    time.sleep(45)
-    #statecheckcommand = '''aws ec2 describe-instances --instance-ids '''+\ 
-    #                    INSTANCE_ID + ''' | grep State'''
-    #out = commands.getstatusoutput(statecheckcommand)
+
+    time.sleep(5)
+    statecheckcommand = '''aws ec2 describe-instances --instance-ids '''+\
+            INSTANCE_ID + ''' | grep '"Name": "running"' | wc -l '''
+    out = commands.getstatusoutput(statecheckcommand)
+    while(out[1] != '1'):
+        sleep(5)
+        out = commands.getstatusoutput(statecheckcommand)
+    sleep(10)
+
+    out = commands.getstatusoutput(statecheckcommand)
     fatchDNScommand = '''aws ec2 describe-instances --instance-id '''+\
                         EC2_INSTANCE_ID+ ''' | grep PublicDnsName | head -1 '''
     print fatchDNScommand
@@ -276,13 +281,16 @@ def main(argv):
         opts, args = getopt.getopt(argv,"hm:v:",["method=","volumeid="])
     except getopt.GetoptError:
         usage()
+        sys.exit(1)
     for opt,arg in opts:
         if opt == '-h':
             usage()
+            sys.exit(0)
         elif opt in ("-m", "--method"):
             if(arg!='dd' and arg!='rsync'):
                 print "Error: Unknow methods:",arg
                 usage()
+                error("Unknow methods "+arg)
             method = arg
         elif opt in ("-v", "--volumeid"):
             VOLUME_ID = arg
@@ -291,8 +299,8 @@ def main(argv):
     if(len(args)==1):
         directory = args[0]
     else:
-        print "Error: Need one directory"
         usage()
+        error("Need one directory")
     
     #==================
     #
@@ -306,13 +314,13 @@ def main(argv):
     if(os.environ.get('EC2_BACKUP_VERBOSE')!=None):
     	VERBOSE = 1
     if(checkdir(directory) == False):
-        print 'Error: directory not exist'
+        error ("directory not exist")
     SOURCE_DIR = full_path(directory)
     SOURCE_DIR_SIZE = getdirsize(SOURCE_DIR)
     calculate()#calculate VOL size 
-    print VOLUME_SIZE
-    print 'info: lanuchec2'
-    lanuchec2()
+    message(" launch ec2 instance")
+    print 'info: launchec2'
+    launchec2()
     createvolumes()
     attach()
     mountvolume()
