@@ -319,8 +319,8 @@ def mountvolume():
 	command = "ssh -t -i %s -o StrictHostKeyChecking=no %s@%s \" sudo sleep 5; sudo sleep 5;sudo mkdir %s;sudo mount /dev/xvdb %s; sudo sleep 5;sudo chmod 777 %s;exit\""%(KEYPAIR_LOCATION, INSTANCE_LOGIN_USR, EC2_HOST,MOUNT_DIR_LOCATION,MOUNT_DIR_LOCATION,MOUNT_DIR_LOCATION)
        	out=commands.getstatusoutput(command)
 	if (out[0]==65280):
-	   message("first ssh attempt failed, waiting for 30s for second attempt")
-	   time.sleep(30)
+	   message("first ssh attempt failed, waiting for 45s for second attempt")
+	   time.sleep(45)
 	   out=commands.getstatusoutput(command)
  	err_check(out)
 #================
@@ -388,8 +388,10 @@ def main(argv):
     mountvolume()
     message("Do backup "+ method +" now")
     dobackup(method)
-    message("do clean now")
+    message("Do clean now")
     clean()#delkey delgroup shutdown instances
+    message("Clean successful")
+    print VOLUME_ID
 
 if __name__ == "__main__":
     main(sys.argv[1:])
