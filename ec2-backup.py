@@ -143,12 +143,12 @@ def launchec2():
 
     time.sleep(5)
     statecheckcommand = '''aws ec2 describe-instances --instance-ids '''+\
-            INSTANCE_ID + ''' | grep '"Name": "running"' | wc -l '''
+            EC2_INSTANCE_ID + ''' | grep '"Name": "running"' | wc -l '''
     out = commands.getstatusoutput(statecheckcommand)
     while(out[1] != '1'):
-        sleep(5)
+        time.sleep(5)
         out = commands.getstatusoutput(statecheckcommand)
-    sleep(10)
+    time.sleep(10)
 
     out = commands.getstatusoutput(statecheckcommand)
     fatchDNScommand = '''aws ec2 describe-instances --instance-id '''+\
