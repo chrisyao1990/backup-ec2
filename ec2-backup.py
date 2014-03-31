@@ -245,7 +245,7 @@ def securitygroupgen():
         addrulecommand = '''aws ec2 authorize-security-group-ingress --group-name ec2backup-security-group --protocol tcp --port 22 --cidr 0.0.0.0/0'''
         out = commands.getstatusoutput(gensecuritycommand)
         err_check(out)
-        print out
+        time.sleep(5)
         out = commands.getstatusoutput(addrulecommand)
         err_check(out)
         print out
@@ -379,13 +379,9 @@ def main(argv):
     else:
         usage()
         error("Need one directory")
-    
-    print "methods=", method
-    print "volumeid=", volumeid
 
     if(os.environ.get('VERBOSE')!=None):
     	VERBOSE = 1
-        print "VERBOSE detected"
     if(checkdir(directory) == False):
         error ("directory not exist")
     SOURCE_DIR = full_path(directory)
