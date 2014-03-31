@@ -121,7 +121,7 @@ def launchec2():
     group =        ' --security-groups ec2backup-security-group '
     instancetype = ' --instance-type t1.micro '
     imageid =      ' --image-id ami-2f726546 '
-    avazone =      ' --availability-zone us-east-1b '
+    avazone =      ''
     grepinsID =    ' | grep InstanceId | head -1 '
     flags = os.environ.get('EC2_BACKUP_FLAGS_AWS')
     sshflags = os.environ.get('EC2_BACKUP_FLAGS_SSH')
@@ -168,9 +168,9 @@ def launchec2():
                         "\n    We only accept change of -i key-pair")
         
     #key and group gen
-    if(len(KEYPAIR_LOCATION)>0):
+    if(len(KEYPAIR_LOCATION)==0):
         KEYPAIR_LOCATION = keygen()
-    if(len(SECURITY_GROUP)>0):
+    if(len(SECURITY_GROUP)==0):
         SECURITY_GROUP = securitygroupgen()
 
     #run ec2
@@ -229,7 +229,6 @@ def delkey(keyname = 'ec2backup-keypair'):
     deletekeycommand = '''aws ec2 delete-key-pair --key-name ec2backup-keypair '''\
             +'''&& rm ~/.ssh/ec2backup-keypair.pem'''
     out = commands.getstatusoutput(deletekeycommand)
-    err_check(out)
     print out
 
 
@@ -257,7 +256,6 @@ def securitygroupgen():
 def delsecgroup():
     delgroupcommand = "aws ec2 delete-security-group --group-name ec2backup-security-group"
     out = commands.getstatusoutput(delgroupcommand)
-    err_check(out)
 
 #==============================
 #Shutdown or del key or del sec group if needed
@@ -326,16 +324,14 @@ def attach():
 #===============================
 def mountvolume():
 	global KEYPAIR_LOCATION, INSTANCE_LOGIN_USR, EC2_HOST, MOUNT_DEV_LOCATION, MOUNT_DEV_LOCATION, MOUNT_DIR_LOCATION
-        time.sleep(30)
-	command=""
-	if(MOUNT_DIR_LOCATION == ''):
-		command = "ssh -i %s %s@%s \"sudo mkfs -t ext3 %s && mkdir /mnt/data-store && mount %s %s && exit\" "%(KEYPAIR_LOCATION, INSTANCE_LOGIN_USR, EC2_HOST, MOUNT_DEV_LOCATION, MOUNT_DEV_LOCATION, MOUNT_DIR_LOCATION)
-		
-	else:
-		command = "ssh -t -i %s -o StrictHostKeyChecking=no %s@%s \" sudo sleep 5; sudo mkfs -F /dev/xvdb; sudo sleep 5;sudo mkdir %s;sudo mount /dev/xvdb %s; sudo sleep 5;sudo chmod 777 %s;exit\""%(KEYPAIR_LOCATION, INSTANCE_LOGIN_USR, EC2_HOST,MOUNT_DIR_LOCATION,MOUNT_DIR_LOCATION,MOUNT_DIR_LOCATION)
-		print command
-        	out=commands.getstatusoutput(command)
-        	print "mountvolume",out
+        time.sleep(45)
+	command = "ssh -t -i %s -o StrictHostKeyChecking=no %s@%s \" sudo sleep 5; sudo mkfs -F /dev/xvdb; sudo sleep 5;sudo mkdir %s;sudo mount /dev/xvdb %s; sudo sleep 5;sudo chmod 777 %s;exit\""%(KEYPAIR_LOCATION, INSTANCE_LOGIN_USR, EC2_HOST,MOUNT_DIR_LOCATION,MOUNT_DIR_LOCATION,MOUNT_DIR_LOCATION)
+	print command
+       	out=commands.getstatusoutput(command)
+	if (out[0]==65280):
+	   time.sleep(30)
+	   out=commands.getstatusoutput(command)
+       	print "mountvolume",out
 #================
 #Delete security group
 # TODO: handle groupname
@@ -407,6 +403,7 @@ def main(argv):
     mountvolume()
     message("Do backup "+ method +" now")
     dobackup(method)
+    message("do clean now")
     clean()#delkey delgroup shutdown instances
 
 if __name__ == "__main__":
