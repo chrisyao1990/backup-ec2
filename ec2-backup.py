@@ -33,7 +33,6 @@ VERBOSE = 0
 def usage():
     print 'Usage:'
     print '  ec2-backup [-h] [-m method] [-v volume-id] dir'
-    sys.exit()
 
 #================================
 #Check the validlity of directory
@@ -54,6 +53,36 @@ def full_path(dir_):
     if dir_[0] == '~' and not os.path.exists(dir_):
         dir_ = os.path.expanduser(dir_)
     return os.path.abspath(dir_)
+
+#==============================
+#Print error massage and exit
+#
+# @param error_message string 
+#==============================
+def error(error_message):
+    sys.stderr.write("Error: " + error_message + "\n")
+    clean()
+    sys.exit(1)
+
+#==============================
+#Print message if VERBOSE
+#
+# @param msg_str string message will be print
+#==============================
+def message(msg_str):
+    global VERBOSE
+    if(VERBOSE):
+        print "Message: ",msg_str,"\n"
+
+#==============================
+#Error check for output from commands.outputstatus
+#
+# @param output len 2 tuple output[0] is return status and ouput[1]
+#                           is return message
+#==============================
+def err_check(output):
+    if(output[0] != 0):
+        error(output[1])
 
 #==============================
 #Size of giving dirctory
@@ -84,13 +113,15 @@ def calculate():
 #TODO: Create EC2 instance and 
 #        set up connection
 #===============================
-def lanuchec2():
-    global AMI_ID,KEYPAIR_LOCATION,SECURITY_GROUP,EC2_INSTANCE_ID,EC2_HOST
+def launchec2():
+    global AMI_ID,KEYPAIR_LOCATION,SECURITY_GROUP,EC2_INSTANCE_ID,\
+            EC2_HOST,AVA_ZONE
     commandhead =  'aws ec2 run-instances '
     key =          ' --key ec2backup-keypair '
     group =        ' --security-groups ec2backup-security-group '
     instancetype = ' --instance-type t1.micro '
     imageid =      ' --image-id ami-2f726546 '
+    avazone =      ' --availability-zone us-east-1b '
     grepinsID =    ' | grep InstanceId | head -1 '
     flags = os.environ.get('EC2_BACKUP_FLAGS_AWS')
     sshflags = os.environ.get('EC2_BACKUP_FLAGS_SSH')
@@ -99,34 +130,67 @@ def lanuchec2():
     #parse aws flags
     if(flags != None):
         try:
-            opts, args = getopt.getopt(flags.split(),"i:",["instance-type="])
+            opts, args = getopt.getopt(flags.split(),"",\
+                    ["instance-type=","security-groups=","image-id=",\
+                    "availability-zone="])
         except getopt.GetoptError:
-            usage()
+            error("Unknow option detected in EC2_BACKUP_FLAGS_AWS,"+\
+                    "\n    We only accept change of instance-type "+\
+                    "security-groups "+"image-id "+ "availability-zone ")
         for opt,arg in opts:
-            if opt == '-i':
-                key = '--key '+ arg
+            if opt == '--security-groups':
+                group = ' --security-groups ' + arg
+                SECURITY_GROUP = arg
+            elif opt == '--image-id':
+                imageid =' --image-id ' + arg
+                AMI_ID = arg
+            elif opt == '--availability-zone':
+                avazone =' --availability-zone '+arg
+                AVA_ZONE = arg
             elif opt == '--instance-type':
-                instancetype = '--instance-type '+arg
-        if(len(args)>=1):
-            print "Error: unknow option detected in $EC2_BACKUP_FLAGS_AWS:", args
-    
+                instancetype = ' --instance-type '+arg
+            if(len(args)>=1):
+                error("Unknow option detected in EC2_BACKUP_FLAGS_AWS,"+\
+                        "\n    We only accept change of instance-type "+\
+                        "security-groups "+"image-id "+ "availability-zone ")
     #TODO:parse ssh flags
-
+    if(sshflags != None):
+        try:
+            opts, args = getopt.getopt(sshflags.split(),"i:",[])
+        except getopt.GetoptError:
+            error("Unknow option detected in EC2_BACKUP_FLAGS_SSH,"+"\n\
+                    We only accept change of -i key-pair")
+        for opt,arg in opts: 
+            if opt == '-i':
+                KEYPAIR_LOCATION = arg 
+            else:
+                error("Unknow option detected in EC2_BACKUP_FLAGS_SSH,"+\
+                        "\n    We only accept change of -i key-pair")
+        
     #key and group gen
-    KEYPAIR_LOCATION = keygen()
-    SECURITY_GROUP = securitygroupgen()
+    if(len(KEYPAIR_LOCATION)>0):
+        KEYPAIR_LOCATION = keygen()
+    if(len(SECURITY_GROUP)>0):
+        SECURITY_GROUP = securitygroupgen()
 
     #run ec2
-    ec2command = commandhead + key + group + instancetype + imageid + grepinsID
+    ec2command = commandhead + key + group + instancetype + \
+            imageid + avazone + grepinsID
     out = commands.getstatusoutput(ec2command)
     EC2_INSTANCE_ID = out[1][-13:-3]
     print out
     print EC2_INSTANCE_ID
-    #TODO: check running
-    time.sleep(45)
-    #statecheckcommand = '''aws ec2 describe-instances --instance-ids '''+\ 
-    #                    INSTANCE_ID + ''' | grep State'''
-    #out = commands.getstatusoutput(statecheckcommand)
+
+    time.sleep(5)
+    statecheckcommand = '''aws ec2 describe-instances --instance-ids '''+\
+            EC2_INSTANCE_ID + ''' | grep '"Name": "running"' | wc -l '''
+    out = commands.getstatusoutput(statecheckcommand)
+    while(out[1] != '1'):
+        time.sleep(5)
+        out = commands.getstatusoutput(statecheckcommand)
+    time.sleep(10)
+
+    out = commands.getstatusoutput(statecheckcommand)
     fatchDNScommand = '''aws ec2 describe-instances --instance-id '''+\
                         EC2_INSTANCE_ID+ ''' | grep PublicDnsName | head -1 '''
     print fatchDNScommand
@@ -154,7 +218,8 @@ def keygen():
 #TODO: handle key name del local key
 #======================
 def delkey(keyname = 'ec2backup-keypair'):
-    deletekeycommand = '''aws ec2 delete-key-pair --key-name ec2backup-keypair'''
+    deletekeycommand = '''aws ec2 delete-key-pair --key-name ec2backup-keypair '''\
+            +'''&& rm ~/.ssh/ec2backup-keypair.pem'''
     out = commands.getstatusoutput(deletekeycommand)
     print out
 
@@ -174,6 +239,26 @@ def securitygroupgen():
         out = commands.getstatusoutput(addrulecommand)
         print out
     return 'ec2backup-security-group'
+#==============================
+#Delete sec group ec2backup-security-group
+#=============================
+def delsecgroup():
+    delgroupcommand = "aws ec2 delete-security-group --group-name ec2backup-security-group"
+    out = commands.getstatusoutput(delgroupcommand)
+
+#==============================
+#Shutdown or del key or del sec group if needed
+#==============================
+def clean():
+    global KEYPAIR_LOCATION, SECURITY_GROUP, EC2_INSTANCE_ID
+    if (len(EC2_INSTANCE_ID)>1):
+        terminatecommand = "aws ec2 terminate-instances --instance-ids "\
+                +EC2_INSTANCE_ID
+        out = commands.getstatusoutput(terminatecommand)
+    if(KEYPAIR_LOCATION == "~/.ssh/ec2backup-keypair.pem"):
+        delkey()
+    if(SECURITY_GROUP == "ec2backup-security-group"):
+        delsecgroup()
 
 #==============================
 #TODO: use 'dd' or 'rsync' backup
@@ -264,13 +349,16 @@ def main(argv):
         opts, args = getopt.getopt(argv,"hm:v:",["method=","volumeid="])
     except getopt.GetoptError:
         usage()
+        sys.exit(1)
     for opt,arg in opts:
         if opt == '-h':
             usage()
+            sys.exit(0)
         elif opt in ("-m", "--method"):
             if(arg!='dd' and arg!='rsync'):
                 print "Error: Unknow methods:",arg
                 usage()
+                error("Unknow methods "+arg)
             method = arg
         elif opt in ("-v", "--volumeid"):
             VOLUME_ID = arg
@@ -279,33 +367,30 @@ def main(argv):
     if(len(args)==1):
         directory = args[0]
     else:
-        print "Error: Need one directory"
         usage()
+        error("Need one directory")
     
-    #==================
-    #
-    #==================
     print "methods=", method
     print "volumeid=", volumeid
     print "Directory=", directory
     print "full path=", full_path(directory)
     print "path exist=", checkdir(directory)
 
-    if(os.environ.get('EC2_BACKUP_VERBOSE')!=None):
+    if(os.environ.get('VERBOSE')!=None):
     	VERBOSE = 1
+        print "VERBOSE detected"
     if(checkdir(directory) == False):
-        print 'Error: directory not exist'
+        error ("directory not exist")
     SOURCE_DIR = full_path(directory)
     SOURCE_DIR_SIZE = getdirsize(SOURCE_DIR)
     calculate()#calculate VOL size 
-    print VOLUME_SIZE
-    print 'info: lanuchec2'
-    lanuchec2()
+    message(" launch ec2 instance")
+    launchec2()
     createvolumes()
     attach()
     mountvolume()
     dobackup(method)
-    #clean()#delkey delgroup shutdown instances
+    clean()#delkey delgroup shutdown instances
 
 if __name__ == "__main__":
     main(sys.argv[1:])
