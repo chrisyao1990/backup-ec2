@@ -221,13 +221,14 @@ def attach():
 #===============================
 def mountvolume():
 	global KEYPAIR_LOCATION, INSTANCE_LOGIN_USR, EC2_HOST, MOUNT_DEV_LOCATION, MOUNT_DEV_LOCATION, MOUNT_DIR_LOCATION
-        command=""
+        time.sleep(10)
+	command=""
 	if(MOUNT_DIR_LOCATION == ''):
 		command = "ssh -i %s %s@%s \"sudo mkfs -t ext3 %s && mkdir /mnt/data-store && mount %s %s && exit\" "%(KEYPAIR_LOCATION, INSTANCE_LOGIN_USR, EC2_HOST, MOUNT_DEV_LOCATION, MOUNT_DEV_LOCATION, MOUNT_DIR_LOCATION)
 		
 	else:
 		command = "ssh -i %s %s@%s \"sudo mkfs -t ext3 %s && mount %s %s && exit\" "%(KEYPAIR_LOCATION, INSTANCE_LOGIN_USR, EC2_HOST, MOUNT_DEV_LOCATION, MOUNT_DEV_LOCATION, MOUNT_DIR_LOCATION)
-        command ="ssh -i %s %s@%s"%(KEYPAIR_LOCATION, INSTANCE_LOGIN_USR, EC2_HOST)
+        command ="ssh -i %s -o StrictHostKeyChecking=no %s@%s"%(KEYPAIR_LOCATION, INSTANCE_LOGIN_USR, EC2_HOST)
 	print command
         out=commands.getstatusoutput(command)
         print "mountvolume",out
