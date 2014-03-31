@@ -266,6 +266,8 @@ def clean():
         terminatecommand = "aws ec2 terminate-instances --instance-ids "\
                 +EC2_INSTANCE_ID
         out = commands.getstatusoutput(terminatecommand)
+        message("Wait instance shutting down")
+        time.sleep(40)
     if(KEYPAIR_LOCATION == "~/.ssh/ec2backup-keypair.pem"):
         delkey()
     if(SECURITY_GROUP == "ec2backup-security-group"):
@@ -395,7 +397,7 @@ def main(argv):
     createvolumes()
     message("Attach volumes now")
     attach()
-    message("Mount message now")
+    message("Mount now")
     mountvolume()
     message("Do backup "+ method +" now")
     dobackup(method)
