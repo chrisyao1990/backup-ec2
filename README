@@ -1,1 +1,12 @@
-ec2-backup
+HW#4: EC2 Backup
+
+Group Member:
+
+KUN YAO: framework and launch ec2 instances
+
+DAINONG MA: create volume, attach volume and dd
+
+ZHE WANG: mount and rsync
+
+We create a tool named ec2-backup running on linux lab by python and shell script.
+
