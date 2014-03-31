@@ -74,6 +74,8 @@ def getdirsize(start_dir = '.'):
 #
 #==============================
 def calculate():
+	global SOURCE_DIR_SIZE, VOLUME_SIZE
+	print SOURCE_DIR_SIZE
 	y = SOURCE_DIR_SIZE/1024/1024/1024
 	VOLUME_SIZE = 2 * (int(y) + 1)
 	print(VOLUME_SIZE)
@@ -88,7 +90,7 @@ def lanuchec2():
     group =        ' --security-groups ec2backup-security-group '
     instancetype = ' --instance-type t1.micro '
     imageid =      ' --image-id ami-2f726546 '
-    grepinsID =    ' | grep InstanceId '
+    grepinsID =    ' | grep InstanceId | head -1 '
     flags = os.environ.get('EC2_BACKUP_FLAGS_AWS')
     sshflags = os.environ.get('EC2_BACKUP_FLAGS_SSH')
     AMI_ID = 'ami-2f726546'
@@ -120,12 +122,12 @@ def lanuchec2():
     print out
     print EC2_INSTANCE_ID
     #TODO: check running
-    time.sleep(120)
+    time.sleep(45)
     #statecheckcommand = '''aws ec2 describe-instances --instance-ids '''+\ 
     #                    INSTANCE_ID + ''' | grep State'''
     #out = commands.getstatusoutput(statecheckcommand)
     fatchDNScommand = '''aws ec2 describe-instances --instance-id '''+\
-                        EC2_INSTANCE_ID+ ''' | grep PublicDnsName'''
+                        EC2_INSTANCE_ID+ ''' | grep PublicDnsName | head -1 '''
     print fatchDNScommand
     out = commands.getstatusoutput(fatchDNScommand)
     EC2_HOST = out[1][38:-3]
@@ -176,10 +178,11 @@ def securitygroupgen():
 #TODO: use 'dd' or 'rsync' backup
 #==============================
 def dobackup(method):
+	global SOURCE_DIR,KEYPAIR_LOCATION,INSTANCE_LOGIN_USR,EC2_HOST,MOUNT_DIR_LOCATION
 	if (method == 'dd'):
 		command = "tar -zcvf  %s_backup.tar.gz %s"%(SOURCE_DIR,SOURCE_DIR)
 		output = commands.getstatusoutput(command)
-		command =" dd if=%s_backup.tar.gz | ssh -i %s %s@%s \" dd of=&s/backup.tar.gz\""%(SOURCE_DIR,KEYPAIR_LOCATION,INSTANCE_LOGIN_USR,EC2_HOST,MOUNT_DIR_LOCATION)
+		command =" dd if=%s_backup.tar.gz \" ssh -i %s %s@%s \" dd of=%s/backup.tar.gz"%(SOURCE_DIR,KEYPAIR_LOCATION,INSTANCE_LOGIN_USR,EC2_HOST,MOUNT_DIR_LOCATION)
 		output = commands.getstatusoutput(command)
 		command = "rm -rf %s_backup.tar.gz"%(SOURCE_DIR)
 		output = commands.getstatusoutput(command)
@@ -193,28 +196,36 @@ def dobackup(method):
 #================================
 
 def createvolumes():
-    commands="aws ec2 create-volume --size %d --availability-zone %s | grep VolumeId"%(VOLUME_SIZE,AVA_ZONE)
-    time.sleep(10)
+    global VOLUME_SIZE,AVA_ZONE
+    command="aws ec2 create-volume --size %d --availability-zone %s | grep VolumeId"%(VOLUME_SIZE,AVA_ZONE)
+    print command
     out = commands.getstatusoutput(command)
-    VOLUME_ID=INSTANCE_ID = out[1][-15:-3]
+    VOLUME_ID=out[1][-15:-3]
+    time.sleep(5)
+    print "createvolume",out
 
 #================================
 #attach volume to running instance
 #===============================
 def attach():
+    global VOLUME_ID,EC2_INSTANCE_ID,MOUNT_DEV_LOCATION
     command="aws ec2 attach-volume --volume-id %s --instance-id %s --device %s"%(VOLUME_ID,EC2_INSTANCE_ID,MOUNT_DEV_LOCATION)
     out = commands.getstatusoutput(command)
+    print "attach",out
 
 #===============================
 #mount dir to instance
 #===============================
 def mountvolume():
+	global KEYPAIR_LOCATION, INSTANCE_LOGIN_USR, EC2_HOST, MOUNT_DEV_LOCATION, MOUNT_DEV_LOCATION, MOUNT_DIR_LOCATION
+        command=""
 	if(MOUNT_DIR_LOCATION == ''):
 		command = "ssh -i %s %s@%s \"sudo mkfs -t ext3 %s && mkdir /mnt/data-store && mount %s %s && exit\" "%(KEYPAIR_LOCATION, INSTANCE_LOGIN_USR, EC2_HOST, MOUNT_DEV_LOCATION, MOUNT_DEV_LOCATION, MOUNT_DIR_LOCATION)
+
 	else:
 		command = "ssh -i %s %s@%s \"sudo mkfs -t ext3 %s && mount %s %s && exit\" "%(KEYPAIR_LOCATION, INSTANCE_LOGIN_USR, EC2_HOST, MOUNT_DEV_LOCATION, MOUNT_DEV_LOCATION, MOUNT_DIR_LOCATION)
-
-
+        out=commands.getstatusoutput(command)
+        print "mountvolume",out
 #================
 #Delete security group
 # TODO: handle groupname
@@ -273,10 +284,13 @@ def main(argv):
     SOURCE_DIR = full_path(directory)
     SOURCE_DIR_SIZE = getdirsize(SOURCE_DIR)
     calculate()#calculate VOL size 
-    
+    print VOLUME_SIZE
     print 'info: lanuchec2'
-    lanuchec2()
-    dobackup(method)
+    #lanuchec2()
+    #createvolumes()
+    #attach()
+    #mountvolume()
+    #dobackup(method)
     #clean()#delkey delgroup shutdown instances
 
 if __name__ == "__main__":
