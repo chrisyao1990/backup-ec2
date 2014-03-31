@@ -179,17 +179,24 @@ def securitygroupgen():
 #TODO: use 'dd' or 'rsync' backup
 #==============================
 def dobackup(method):
-	global SOURCE_DIR,KEYPAIR_LOCATION,INSTANCE_LOGIN_USR,EC2_HOST,MOUNT_DIR_LOCATION
+	global SOURCE_DIR,KEYPAIR_LOCATION,INSTANCE_LOGIN_USR,EC2_HOST,MOUNT_DIR_LOCATION,ABSOLUTE_KEY_LOCATION
+
 	if (method == 'dd'):
+
 		command = "tar -zcvf  %s_backup.tar.gz %s"%(SOURCE_DIR,SOURCE_DIR)
 		output = commands.getstatusoutput(command)
-		command =" dd if=%s_backup.tar.gz \" ssh -i %s %s@%s \" dd of=%s/backup.tar.gz"%(SOURCE_DIR,KEYPAIR_LOCATION,INSTANCE_LOGIN_USR,EC2_HOST,MOUNT_DIR_LOCATION)
+		print "do tar",output
+		command =" dd if=%s_backup.tar.gz | ssh -i %s %s@%s \" dd of=%s/backup.tar.gz\""%(SOURCE_DIR,KEYPAIR_LOCATION,INSTANCE_LOGIN_USR,EC2_HOST,MOUNT_DIR_LOCATION)
 		output = commands.getstatusoutput(command)
+		print "do dd",output
 		command = "rm -rf %s_backup.tar.gz"%(SOURCE_DIR)
 		output = commands.getstatusoutput(command)
+		print "rm",output
 	else:
-		command = "rsync -e \"ssh -i %s\" -az %s %s@%s:%s/ >out.txt"%(KEYPAIR_LOCATION, SOURCE_DIR, INSTANCE_LOGIN_USR, EC2_HOST, MOUNT_DIR_LOCATION)
-
+		ABSOLUTE_KEY_LOCATION = full_path(KEYPAIR_LOCATION)
+		command = "rsync -e \"ssh -i %s\" -az %s %s@%s:%s/"%(ABSOLUTE_KEY_LOCATION, SOURCE_DIR, INSTANCE_LOGIN_USR, EC2_HOST, MOUNT_DIR_LOCATION)
+		output = commands.getstatusoutput(command)
+		print "do rsync",output
 
 #================================
 # create volume and output the
@@ -227,7 +234,7 @@ def mountvolume():
 		command = "ssh -i %s %s@%s \"sudo mkfs -t ext3 %s && mkdir /mnt/data-store && mount %s %s && exit\" "%(KEYPAIR_LOCATION, INSTANCE_LOGIN_USR, EC2_HOST, MOUNT_DEV_LOCATION, MOUNT_DEV_LOCATION, MOUNT_DIR_LOCATION)
 		
 	else:
-		command = "ssh -t -i %s -o StrictHostKeyChecking=no %s@%s \" sudo sleep 5; sudo mkfs -F %s; sudo sleep 5;sudo mkdir %s;sudo mount %s %s; exit\""%(KEYPAIR_LOCATION, INSTANCE_LOGIN_USR, EC2_HOST,MOUNT_DEV_LOCATION,MOUNT_DIR_LOCATION,MOUNT_DEV_LOCATION,MOUNT_DIR_LOCATION)
+		command = "ssh -t -i %s -o StrictHostKeyChecking=no %s@%s \" sudo sleep 5; sudo mkfs -F /dev/xvdb; sudo sleep 5;sudo mkdir %s;sudo mount /dev/xvdb %s; sudo sleep 5;sudo chmod 777 %s;exit\""%(KEYPAIR_LOCATION, INSTANCE_LOGIN_USR, EC2_HOST,MOUNT_DIR_LOCATION,MOUNT_DIR_LOCATION,MOUNT_DIR_LOCATION)
 		print command
         	out=commands.getstatusoutput(command)
         	print "mountvolume",out
