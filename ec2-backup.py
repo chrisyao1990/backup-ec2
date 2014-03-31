@@ -91,7 +91,7 @@ def lanuchec2():
     grepinsID =    ' | grep InstanceId '
     flags = os.environ.get('EC2_BACKUP_FLAGS_AWS')
     sshflags = os.environ.get('EC2_BACKUP_FLAGS_SSH')
-    AMI_ID = 'ami-2f726546'
+    global AMI_ID = 'ami-2f726546'
     
     #parse aws flags
     if(flags != None):
@@ -110,13 +110,13 @@ def lanuchec2():
     #TODO:parse ssh flags
 
     #key and group gen
-    KEYPAIR_LOCATION = keygen()
-    SECURITY_GROUP = securitygroupgen()
+    global KEYPAIR_LOCATION = keygen()
+    global SECURITY_GROUP = securitygroupgen()
 
     #run ec2
     ec2command = commandhead + key + group + instancetype + imageid + grepinsID
     out = commands.getstatusoutput(ec2command)
-    EC2_INSTANCE_ID = out[1][-13:-3]
+    global EC2_INSTANCE_ID = out[1][-13:-3]
     print out
     print EC2_INSTANCE_ID
     #TODO: check running
@@ -128,7 +128,7 @@ def lanuchec2():
                         EC2_INSTANCE_ID+ ''' | grep PublicDnsName'''
     print fatchDNScommand
     out = commands.getstatusoutput(fatchDNScommand)
-    EC2_HOST = out[1][38:-3]
+    global EC2_HOST = out[1][38:-3]
     print 'EC2_HOST',EC2_HOST
 
        
@@ -248,7 +248,7 @@ def main(argv):
                 usage()
             method = arg
         elif opt in ("-v", "--volumeid"):
-            VOLUME_ID = arg
+            global VOLUME_ID = arg
             volumeid = arg
 
     if(len(args)==1):
@@ -267,11 +267,11 @@ def main(argv):
     print "path exist=", checkdir(directory)
 
     if(os.environ.get('EC2_BACKUP_VERBOSE')!=None):
-    	VERBOSE = 1
+    	global VERBOSE = 1
     if(checkdir(directory) == False):
         print 'Error: directory not exist'
-    SOURCE_DIR = full_path(directory)
-    SOURCE_DIR_SIZE = getdirsize(SOURCE_DIR)
+    global SOURCE_DIR = full_path(directory)
+    global SOURCE_DIR_SIZE = getdirsize(SOURCE_DIR)
     calculate()#calculate VOL size 
     
     print 'info: lanuchec2'
