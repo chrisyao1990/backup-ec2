@@ -56,6 +56,25 @@ def full_path(dir_):
     return os.path.abspath(dir_)
 
 #==============================
+#Print error massage and exit
+#
+# @param error_message string 
+#==============================
+def error(error_message):
+    sys.stderr.write("Error: " + error_message + "\n")
+    sys.exit(1)
+
+#==============================
+#Print message if VERBOSE
+#
+# @param msg_str string message will be print
+#==============================
+def message(msg_str):
+    global VERBOSE
+    if(VERBOSE):
+        print "Message: ",msg_str,"\n"
+
+#==============================
 #Size of giving dirctory
 # @param  string start dirctory
 # @return int    total number of bytes of giving dir
