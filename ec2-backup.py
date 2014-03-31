@@ -85,6 +85,7 @@ def calculate():
 #        set up connection
 #===============================
 def lanuchec2():
+    global AMI_ID,KEYPAIR_LOCATION,SECURITY_GROUP,EC2_INSTANCE_ID,EC2_HOST
     commandhead =  'aws ec2 run-instances '
     key =          ' --key ec2backup-keypair '
     group =        ' --security-groups ec2backup-security-group '
@@ -93,7 +94,7 @@ def lanuchec2():
     grepinsID =    ' | grep InstanceId | head -1 '
     flags = os.environ.get('EC2_BACKUP_FLAGS_AWS')
     sshflags = os.environ.get('EC2_BACKUP_FLAGS_SSH')
-    global AMI_ID = 'ami-2f726546'
+    AMI_ID = 'ami-2f726546'
     
     #parse aws flags
     if(flags != None):
@@ -112,13 +113,13 @@ def lanuchec2():
     #TODO:parse ssh flags
 
     #key and group gen
-    global KEYPAIR_LOCATION = keygen()
-    global SECURITY_GROUP = securitygroupgen()
+    KEYPAIR_LOCATION = keygen()
+    SECURITY_GROUP = securitygroupgen()
 
     #run ec2
     ec2command = commandhead + key + group + instancetype + imageid + grepinsID
     out = commands.getstatusoutput(ec2command)
-    global EC2_INSTANCE_ID = out[1][-13:-3]
+    EC2_INSTANCE_ID = out[1][-13:-3]
     print out
     print EC2_INSTANCE_ID
     #TODO: check running
@@ -130,7 +131,7 @@ def lanuchec2():
                         EC2_INSTANCE_ID+ ''' | grep PublicDnsName | head -1 '''
     print fatchDNScommand
     out = commands.getstatusoutput(fatchDNScommand)
-    global EC2_HOST = out[1][38:-3]
+    EC2_HOST = out[1][38:-3]
     print 'EC2_HOST',EC2_HOST
 
        
@@ -240,6 +241,8 @@ def delsecuritygroup(groupname = 'ec2backup-security-group'):
 #
 #=============
 def main(argv):
+    global KEYPAIR_LOCATION, INSTANCE_LOGIN_USR, EC2_HOST ,VERBOSE
+    global VOLUME_ID, SOURCE_DIR, SOURCE_DIR_SIZE
     method='dd'
     volumeid = ''
     directory = ''
@@ -259,7 +262,7 @@ def main(argv):
                 usage()
             method = arg
         elif opt in ("-v", "--volumeid"):
-            global VOLUME_ID = arg
+            VOLUME_ID = arg
             volumeid = arg
 
     if(len(args)==1):
@@ -278,11 +281,11 @@ def main(argv):
     print "path exist=", checkdir(directory)
 
     if(os.environ.get('EC2_BACKUP_VERBOSE')!=None):
-    	global VERBOSE = 1
+    	VERBOSE = 1
     if(checkdir(directory) == False):
         print 'Error: directory not exist'
-    global SOURCE_DIR = full_path(directory)
-    global SOURCE_DIR_SIZE = getdirsize(SOURCE_DIR)
+    SOURCE_DIR = full_path(directory)
+    SOURCE_DIR_SIZE = getdirsize(SOURCE_DIR)
     calculate()#calculate VOL size 
     print VOLUME_SIZE
     print 'info: lanuchec2'
