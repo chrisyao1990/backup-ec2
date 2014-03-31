@@ -382,7 +382,7 @@ def main(argv):
     SOURCE_DIR_SIZE = getdirsize(SOURCE_DIR)
     calculate()#calculate VOL size 
     message("Directory: "+SOURCE_DIR)
-    message("Directory Size(bytes): "+SOURCE_DIR_SIZE)
+    message("Directory Size(bytes): "+str(SOURCE_DIR_SIZE))
     message("Launch EC2 instance now")
     launchec2()
     message("Create volumes now")
